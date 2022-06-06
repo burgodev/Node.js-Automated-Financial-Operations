@@ -1,0 +1,23 @@
+{
+    "auth": {
+        "password": {
+            "recovery": {
+                "title": "Hello {{ user_name }}, your password recovery...",
+                "bt": "Password recovery"
+            }
+        }
+    },
+    "selectmarkets": {
+        "request_failed": "The request for Select Markets has failed!",
+        "broker_account_not_synchrozed": "The broker account is not synchronized!"
+    },
+    "subscription_plan": {
+        "not_found": "Plan not found!"
+    },
+    "subscription": {
+        "not_found": "Subscription not found!"
+    },
+    "broker_account": {
+        "not_found": "Broker account not found!"
+    }
+}

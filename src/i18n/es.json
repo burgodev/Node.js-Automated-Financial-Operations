@@ -1,0 +1,10 @@
+{
+    "auth": {
+        "password": {
+            "recovery": {
+                "title": "Olá {{ user_name }}, sua recuperação de senha...",
+                "bt": "Recuperar senha"
+            }
+        }
+    }
+}

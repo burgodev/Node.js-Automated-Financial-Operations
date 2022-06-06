@@ -1,0 +1,75 @@
+{
+  "name": "botmoney",
+  "version": "1.0.0",
+  "description": "Install Docker and Docker-compose",
+  "main": "index.js",
+  "scripts": {
+    "start": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
+    "node": "nodemon",
+    "migrate:i18n": "node scripts/migrate-i18n.js",
+    "build:nodemoon": "nodemon --exec babel-node ./src/server.ts",
+    "build:babel": "babel ./src/server.ts -d ./dist ",
+    "prebuild": "sh scripts/rm-dist.sh",
+    "build": "tsc --build",
+    "postbuild": "sh scripts/copy-files.sh",
+    "prestart:prod": "sh scripts/prisma-deploy.sh",
+    "start:prod": "node dist/src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/projetoswesy/botmoney.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/projetoswesy/botmoney/issues"
+  },
+  "prisma": {
+    "schema": "./prisma/schema.prisma",
+    "seed": "ts-node ./prisma/seed.ts"
+  },
+  "homepage": "https://github.com/projetoswesy/botmoney#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.17.3",
+    "@babel/core": "^7.17.5",
+    "@babel/node": "^7.16.8",
+    "@babel/preset-typescript": "^7.16.7",
+    "@types/bcrypt": "^5.0.0",
+    "@types/cors": "^2.8.12",
+    "@types/express": "^4.17.13",
+    "@types/i18next": "^13.0.0",
+    "@types/i18next-node-fs-backend": "^2.1.1",
+    "@types/jsonwebtoken": "^8.5.8",
+    "@types/node": "^17.0.18",
+    "@types/uuid": "^8.3.4",
+    "@typescript-eslint/eslint-plugin": "^5.10.1",
+    "@typescript-eslint/parser": "^5.10.1",
+    "babel-cli": "^6.26.0",
+    "eslint": "^8.7.0",
+    "nodemon": "^2.0.15",
+    "ts-node": "^10.5.0",
+    "ts-node-dev": "^1.1.8",
+    "typescript": "^4.5.5"
+  },
+  "dependencies": {
+    "@babel/preset-env": "^7.16.11",
+    "prisma": "^3.11.1",
+    "@prisma/client": "^3.11.1",
+    "aws-sdk": "^2.1076.0",
+    "axios": "^0.25.0",
+    "bcrypt": "^5.0.1",
+    "better-module-alias": "^1.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^14.3.0",
+    "express": "^4.17.2",
+    "express-async-errors": "^3.1.1",
+    "express-validator": "^6.14.0",
+    "i18next": "^21.6.11",
+    "i18next-express-middleware": "^2.0.0",
+    "i18next-node-fs-backend": "^2.1.3",
+    "jsonwebtoken": "^8.5.1",
+    "reflect-metadata": "^0.1.13",
+    "tsyringe": "^4.6.0",
+    "uuid": "^8.3.2"
+  }
+}

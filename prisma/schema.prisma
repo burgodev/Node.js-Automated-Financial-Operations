@@ -1,0 +1,562 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id String @id @db.Uuid @default(uuid())
+
+  email         String  @unique
+  password_hash String
+  name          String?
+  birthday      String?
+  phone         String?
+  ddi           String?
+  document      String?
+
+  created_at     DateTime  @default(now())
+  updated_at     DateTime? @updatedAt
+  deactivated_at DateTime?
+
+  nationality_id String? 
+  location_id String? 
+
+  address              Address[]
+  roles               UserRole[]
+  notifications       Notification[]
+  announcementsUsers  AnnouncementUser[]
+  userAcceptanceTerms AcceptanceTermHistory[]
+  brokersAccounts     BrokerAccount[]
+  devices             Device[]
+  actionLogs          ActionLog[]
+  subscriptions       Subscription[]
+  paymentCards        PaymentCard[]
+  charges             ChargeHistory[]
+  passwordRecoveries  PasswordRecovery[]
+  customerGateway     CustomerGatewayInfos[]
+  preferencesConfig   PreferencesConfig?
+  location            Country?                @relation("user_location_fk", fields: [location_id], references: [iso_code])
+  nationality         Country?                @relation("user_nationality_fk", fields: [nationality_id], references: [iso_code])
+
+  @@map("users")
+}
+
+model Address {
+  id String @id @db.Uuid @default(uuid())
+  
+	cep String
+	number Int
+  street String
+	city String
+	state String
+	country_id String
+	neighborhood String
+  is_main_address Boolean @default(false) // User main address
+  complement     String?
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  deleted_at DateTime?
+
+  user_id String @db.Uuid
+
+  user User? @relation(fields: [user_id], references: [id])
+  country Country @relation(fields: [country_id], references: [iso_code])
+  paymentCard PaymentCard[]
+
+  @@map("addresses")
+}
+
+model Country {
+  iso_code String @id @unique
+
+  name                     String 
+  ddi                      String?
+  is_supported_as_location Boolean @default(false)
+
+  addresses          Address[]
+  userNationalities User[]   @relation("user_nationality_fk")
+  userLocations     User[]   @relation("user_location_fk")
+
+  @@map("countries")
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+  SUPPORT
+}
+
+model UserRole {
+  id String @id @db.Uuid @default(uuid())
+  user_id String @db.Uuid
+  role Role
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("users_roles")
+}
+
+model PreferencesConfig {
+  id String @id @db.Uuid @default(uuid())
+
+  language              Language @default(PORTUGUESE)
+  theme                 Theme    @default(STANDARD)
+  anti_fishing_argument String?
+
+  user_id String @db.Uuid @unique
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("preferences_configs")
+}
+
+enum Theme {
+  STANDARD
+
+  @@map("theme")
+}
+
+enum Language {
+  PORTUGUESE
+  ENGLISH
+}
+
+model Notification {
+	id String @id @db.Uuid @default(uuid())
+   
+	subject_key String // ex account.aproved  "Account validation"
+	subject_args Json // []
+	text_key String // ex: account.aproved "Mr {1}, your account has been aproved"
+	text_args Json // The text to be replaced on the {1} ["Giulio"] - "Mr Giulio, your account [...]"
+	datetime DateTime 
+	is_read Boolean @default(false)
+
+	user_id String @db.Uuid
+	user User @relation(fields: [user_id], references: [id])
+
+	@@map("notifications")
+}
+
+model Announcement {
+  id String @id @db.Uuid @default(uuid())
+
+  html                 String    @default("")
+  is_active            Boolean   @default(true)
+  activation_starts_at DateTime  @default(now())
+  activation_ends_at   DateTime?
+
+  created_at DateTime  @default(now())
+  created_by String
+  updated_at DateTime? @updatedAt
+  updated_by String?
+
+  userAnnouncements AnnouncementUser[]
+  roles             AnnouncementRole[]
+
+  @@map("announcements")
+}
+
+model AnnouncementRole {
+  id String @id @db.Uuid @default(uuid())
+
+  announcement_id String @db.Uuid
+  role Role
+
+  announcement Announcement @relation(fields: [announcement_id], references: [id])
+
+  @@map("announcements_roles")
+}
+
+model AnnouncementUser {
+  id String @id @db.Uuid @default(uuid())
+  
+  is_checked Boolean @default(false)
+  datetime DateTime @default(now())
+
+  user_id String @db.Uuid
+  announcement_id String @db.Uuid
+
+  user         User         @relation(fields: [user_id], references: [id])
+  announcement Announcement @relation(fields: [announcement_id], references: [id])
+
+  @@map("announcements_users")
+}
+
+model AcceptanceTermHistory {
+  id String @id @db.Uuid @default(uuid())
+  
+  is_accepted Boolean
+
+  datetime DateTime @default(now())
+
+  user_id String @db.Uuid
+  acceptance_term_id String @db.Uuid
+
+  user           User           @relation(fields: [user_id], references: [id])
+  acceptanceTerm AcceptanceTerm @relation(fields: [acceptance_term_id], references: [id])
+
+  @@map("acceptance_terms_history")
+}
+
+model AcceptanceTerm {
+  id String @id @db.Uuid @default(uuid())
+
+  is_active   Boolean   @default(true)
+  expiry_date DateTime?
+  content     String
+
+  created_at     DateTime  @default(now())
+  created_by     String
+  updated_at     DateTime? @updatedAt
+  updated_by     String
+  deactivated_at DateTime?
+
+  acceptanceTermHistories AcceptanceTermHistory[]
+
+  @@map("acceptance_terms")
+}
+
+model Broker {
+  id String @id @db.Uuid @default(uuid())
+
+  name String @unique
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  created_by String
+  updated_by String?
+
+  brokerAccounts BrokerAccount[]
+
+  @@map("brokers")
+}
+
+model BrokerAccount { 
+  id String @id @db.Uuid @default(uuid())
+
+  balance                    Decimal?
+  external_broker_account_id String @unique // Código Identificador de uma broker account na Select
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  deleted_at DateTime?
+
+  user_id String @db.Uuid
+  broker_id String @db.Uuid
+
+  user                   User                     @relation(fields: [user_id], references: [id])
+  broker                 Broker                   @relation(fields: [broker_id], references: [id])
+  brokerOperationAccount BrokerOperationAccount[]
+
+  @@map("broker_accounts")
+}
+
+model BrokerOperationAccount { // Código Identificador de uma operation account na Select?
+  id String @id @db.Uuid @default(uuid())
+
+  number        Int                  @unique
+  name          String
+  type          OperationAccountType @default(DEMO)
+  balance_total Decimal
+
+  created_at DateTime  @default(now())
+  updated_at DateTime? @updatedAt
+  deleted_at DateTime?
+
+  broker_account_id String @db.Uuid
+  subscription_id String? @db.Uuid
+
+  subscription       Subscription?      @relation(fields: [subscription_id], references: [id])
+  brokerAccount      BrokerAccount      @relation(fields: [broker_account_id], references: [id])
+  operationHistories OperationHistory[]
+
+  @@map("broker_operation_accounts")
+}
+
+enum OperationAccountType {
+  REAL
+  DEMO
+}
+
+model OperationHistory {
+  id String @id @db.Uuid @default(uuid())
+  //TODO
+
+  broker_operation_account_id String @db.Uuid
+
+  brokerOperationAccount BrokerOperationAccount @relation(fields: [broker_operation_account_id], references: [id])
+
+  @@map("operations_history")
+}
+
+model Subscription {
+  id String @id @db.Uuid @default(uuid())
+
+  start_date DateTime?
+  expires_at DateTime?
+  is_active  Boolean? // null if has never been activated, false if had been and it's no longer
+  is_simulation    Boolean @default(false)
+
+  created_at DateTime @default(now())
+
+  user_id String @db.Uuid  
+  payment_config_id String? @db.Uuid
+  subscription_plan_id String @db.Uuid
+
+  user                   User                      @relation(fields: [user_id], references: [id])
+  brokerOperationAccount BrokerOperationAccount?
+  subscriptionPlan       SubscriptionPlan          @relation(fields: [subscription_plan_id], references: [id])
+  costHistories          subscriptionCostHistory[]
+  paymentConfig          SubscriptionPaymentConfig? @relation(fields: [payment_config_id], references: [id])
+
+  @@map("subscriptions")
+}
+
+
+model subscriptionCostHistory {
+  id String @id @db.Uuid @default(uuid())
+
+  due_date       DateTime
+  paid_at        DateTime?
+  start_validity DateTime?
+  end_validity DateTime?
+  
+  subscription_id String @db.Uuid
+  charge_id String @db.Uuid
+
+  subscription Subscription  @relation(fields: [subscription_id], references: [id])
+  charge       ChargeHistory @relation(fields: [charge_id], references: [id])
+
+  @@map("subscription_costs_history")
+}
+
+model ChargeHistory {
+  id String @id @db.Uuid @default(uuid())
+
+  due_date DateTime
+  price Float
+  paid_at DateTime?
+  gateway_charge_id String? @unique
+  error_code String?
+  
+  user_id String @db.Uuid
+  payment_config_id String @db.Uuid
+
+  costHistory   subscriptionCostHistory[]
+  user          User                      @relation(fields: [user_id], references: [id])
+  paymentConfig SubscriptionPaymentConfig @relation(fields: [payment_config_id], references: [id])
+
+  @@map("charges_history")
+}
+
+model SubscriptionPaymentConfig {
+  id String @id @db.Uuid @default(uuid())
+
+  payment_external_reference String // The reference for recurrent on payment gateway
+
+  payment_card_id String? @db.Uuid
+  customer_gateway_id String @db.Uuid
+
+  paymentCard     PaymentCard?         @relation(fields: [payment_card_id], references: [id])
+  customerGateway CustomerGatewayInfos @relation(fields: [customer_gateway_id], references: [id])
+
+  subscription    Subscription?
+  charges         ChargeHistory[]
+
+  @@map("subscription_payments_configs")
+}
+
+model TraderRobot {
+  id String @id @db.Uuid @default(uuid())
+
+  name     String
+  logo_url String
+
+  created_at DateTime  @default(now())
+  created_by String
+  updated_at DateTime? @updatedAt
+  updated_by String
+  deleted_at DateTime?
+  deleted_by String?
+
+  subscriptionPlans SubscriptionPlan[]
+
+  @@map("trader_robots")
+}
+
+model SubscriptionPlan {
+  id String @id @db.Uuid @default(uuid())
+
+  name                              String
+  type                              SubscriptionType
+  active                            Boolean          @default(true)
+  validity_start                    DateTime         @default(now())
+  validity_end                      DateTime?
+  price                             Float
+  minimum_months_of_subscription    Int? // Mínimo de meses para contratar esse plano
+  maximum_months_of_advance_payment Int? // Máximo de meses para adiantar pagamento desse plano
+
+  created_at DateTime  @default(now())
+  created_by String
+  updated_at DateTime? @updatedAt
+  updated_by String
+  deleted_at DateTime?
+  deleted_by String?
+
+  trader_robot_id String @db.Uuid
+
+  traderRobot   TraderRobot    @relation(fields: [trader_robot_id], references: [id])
+  subscriptions Subscription[]
+
+  @@map("subscription_plans")
+}
+
+enum SubscriptionType {
+  FIXED
+  VARIABLE
+  PROFIT
+  BALANCE
+  DEMO
+}
+
+model PaymentCard {
+  id String @id @db.Uuid @default(uuid())
+
+  cardholder   String
+  number       String
+  expiry_month String
+  expiry_year  String
+
+  user_id String @db.Uuid
+  address_id String @db.Uuid
+
+  user          User                        @relation(fields: [user_id], references: [id])
+  paymentConfig SubscriptionPaymentConfig[]
+  address        Address                      @relation(fields: [address_id], references: [id])
+
+  @@map("payment_cards")
+}
+
+enum FinancialSituation {
+  REGULAR
+  IRREGULAR
+
+  @@map("financial_situacion")
+}
+
+model PaymentGateway {
+  id String @id @db.Uuid @default(uuid())
+
+  name String // Pagar.me | Mercado Page | PayPal
+
+  paymentMethods PaymentMethod[]
+
+  customerGateway CustomerGatewayInfos[]
+
+  @@map("payment_gateways")
+}
+
+model CustomerGatewayInfos {
+  id String @id @db.Uuid @default(uuid())
+
+  customer_id String // ID generated by the payment gateway to identify the customer
+
+  payment_gateway_id String @db.Uuid
+  user_id String @db.Uuid
+
+  user          User                       @relation(fields: [user_id], references: [id])
+  gateway       PaymentGateway             @relation(fields: [payment_gateway_id], references: [id])
+
+  paymentConfig SubscriptionPaymentConfig[]
+
+  @@map("customer_gateway_infos")
+}
+
+model PaymentType {
+  id String @id @db.Uuid @default(uuid())
+
+  name String @unique // Boleto, Crédito, Débito, Pix
+
+  paymentMethods PaymentMethod[]
+
+  @@map("payment_types")
+}
+
+model PaymentMethod {
+  id String @id @db.Uuid @default(uuid())
+
+  recurrent_on_gateway Boolean @default(true)
+
+  payment_type_id String @db.Uuid
+  payment_gateway_id String @db.Uuid
+
+  paymentType    PaymentType    @relation(fields: [payment_type_id], references: [id])
+  paymentGateway PaymentGateway @relation(fields: [payment_gateway_id], references: [id])
+
+  @@map("payment_methods")
+}
+
+model Device {
+  id String @id @db.Uuid @default(uuid())
+
+  mac_address String
+  type       DeviceType
+
+  user_id String @db.Uuid
+
+  actionsLogs ActionLog[]
+  user        User        @relation(fields: [user_id], references: [id])
+
+  @@map("devices")
+}
+
+enum DeviceType {
+  DESKTOP
+  MOBILE
+  TABLET
+}
+
+model ActionLog {
+  id String @id @db.Uuid @default(uuid())
+
+  ip       String
+  datetime DateTime
+  action   Actiontype
+
+  device_id String @db.Uuid
+  user_id String @db.Uuid
+
+  device Device @relation(fields: [device_id], references: [id])
+  user   User   @relation(fields: [user_id], references: [id])
+
+  @@map("actions_logs")
+}
+
+enum Actiontype {
+  LOGIN
+  LOGOFF
+  ACCOUNT_REGISTRATION
+  PASSWORD_RECOVERY
+  EMAIL_SENT
+
+  @@map("action_type")
+}
+
+model PasswordRecovery {
+  id String @id @db.Uuid @default(uuid())
+
+  user_id String @db.Uuid
+  created_at DateTime @default(now())
+  expires_at DateTime
+  is_valid   Boolean  @default(true)
+  token      String   @unique
+
+  user User @relation(fields: [user_id], references: [id])
+
+  @@map("password_recoveries")
+}

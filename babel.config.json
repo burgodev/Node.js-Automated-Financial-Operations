@@ -1,0 +1,16 @@
+{
+    "name": "botmoney-api",
+    "version": "1.0.0",
+    "babel": {
+        "presets": [
+            "@babel/preset-typescript",
+            [
+                "@babel/preset-env",
+                {
+                    "targets": "> 0.25%, not dead"
+                }
+            ]
+        ],
+      "plugins": [],
+    }
+  }
